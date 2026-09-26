@@ -101,7 +101,8 @@ static int set_report_cb(const struct device *dev, struct usb_setup_packet *setu
             LOG_ERR("LED set report is malformed: length=%d", *len);
             return -EINVAL;
         } else {
-            struct zmk_hid_led_report *report = (struct zmk_hid_led_report *)*data;
+            struct zmk_hid_led_report *report =
+                (struct zmk_hid_led_report *)*data;
             struct zmk_endpoint_instance endpoint = {
                 .transport = ZMK_TRANSPORT_USB,
             };
@@ -109,8 +110,30 @@ static int set_report_cb(const struct device *dev, struct usb_setup_packet *setu
         }
         break;
 #endif // IS_ENABLED(CONFIG_ZMK_HID_INDICATORS)
+
+    case ZMK_HID_REPORT_ID_MONITORING: {
+        if (*len != 8) {
+            LOG_ERR("Monitoring report is malformed: length=%d", *len);
+            return -EINVAL;
+        }
+
+        const uint8_t *report = *data;
+
+        LOG_INF("Monitoring report: flags=%u CPU=%u%% CPU temp=%d C "
+                "GPU=%u%% GPU temp=%d C RAM=%u%%",
+                report[1],
+                report[2],
+                (int8_t)report[3],
+                report[4],
+                (int8_t)report[5],
+                report[6]);
+
+        break;
+    }
+
     default:
-        LOG_ERR("Invalid report ID %d requested", setup->wValue & HID_GET_REPORT_ID_MASK);
+        LOG_ERR("Invalid report ID %d requested",
+                setup->wValue & HID_GET_REPORT_ID_MASK);
         return -EINVAL;
     }
 
